@@ -1,9 +1,9 @@
 
 ---
 
-# 🎤 Audio-Seeded RSA + AES-GCM Encryptor/Decryptor
+# 🎤 VoxCrypt Audio-Seeded RSA + AES-GCM Encryptor/Decryptor
 
-**Audio-Seeded RSA + AES-GCM** is an experimental encryption tool that combines cryptography with real-time audio processing.
+**VoxCrypt Audio-Seeded RSA + AES-GCM** is an experimental encryption tool that combines cryptography with real-time audio processing.
 The RSA keypair is generated entirely from your voice, recorded through the microphone, while AES-256-GCM encryption uses continuously updated salt values derived from live audio input.
 
 The program also features a **neon-style waveform display** of your voice in real time, and can save encryption “snapshots” containing the keys and ciphertext for later decryption.
