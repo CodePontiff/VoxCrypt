@@ -96,14 +96,44 @@ This project is released for educational and research purposes. Do **NOT** use i
 
 ---
 Sample:
-input:
-<img width="630" height="30" alt="image" src="https://github.com/user-attachments/assets/675f843d-aca1-4600-8674-f1b69da1340a" />
+input text:
+```
+python voxcrypt_encryptor.py -i "test vox_crypt" -o output_short.txt
 
-process:
-<img width="914" height="704" alt="image" src="https://github.com/user-attachments/assets/b24e4c0b-88c7-479f-9dc5-f19d57b4adc7" />
+```
+<img width="601" height="29" alt="image" src="https://github.com/user-attachments/assets/d85910bb-06d6-42a8-ace1-211a469d9375" />
 
-output:
-<img width="449" height="73" alt="image" src="https://github.com/user-attachments/assets/a64d4f8d-f529-4adf-b122-17567c355fa0" />
+process text:
+<img width="976" height="705" alt="image" src="https://github.com/user-attachments/assets/b20ee8ef-5740-4b7e-a1b7-9540b4b3ba7b" />
+
+output text:
+```
+python voxcrypt_decryptor.py output_short.txt --all 
+```
+
+<img width="471" height="65" alt="image" src="https://github.com/user-attachments/assets/6c6f6169-1060-4b19-bc8e-5ee79caee8df" />
+
+---
+
+input file:
+```
+python voxcrypt_encryptor.py -I loremipsum.txt -o output_long.txt 
+
+```
+<img width="598" height="25" alt="image" src="https://github.com/user-attachments/assets/dbfdf358-28e7-4af8-a9f4-360308e53e5d" />
 
 
 
+process file:
+<img width="1079" height="712" alt="image" src="https://github.com/user-attachments/assets/a1a15ab8-fb01-489e-b2bb-6f163ce1edbd" />
+
+
+output file:
+```
+python voxcrypt_decryptor.py output_long.txt --all    
+```
+
+<img width="786" height="196" alt="image" src="https://github.com/user-attachments/assets/b4ddce9d-f247-4b12-9aae-3bfb6a6f3c98" />
+
+
+---
