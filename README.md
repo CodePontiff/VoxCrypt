@@ -28,12 +28,12 @@ It’s designed for demonstration, research, and educational purposes in the fie
 
 ### **Decryptor (`decryptor.py`)**
 
-| Option       | Description                                                   |
-| ------------ | ------------------------------------------------------------- |
-| `input_file` | Snapshot file to decrypt                                      |
-| `--first`    | Decrypts only the first snapshot                              |
-| `--last`     | Decrypts only the last snapshot                               |
-| `--all`      | Merges all snapshots into one output, removing duplicate text |
+| Option       | Description                                                           |
+| ------------ | --------------------------------------------------------------------- |
+| `input_file` | output file to decrypt                                                |
+| `--first`    | Decrypts only the first output                                        |
+| `--last`     | Decrypts only the last line of output file                            |
+| `--all`      | Merges all snapshots into one output, removing duplicate text         |
 
 ---
 
