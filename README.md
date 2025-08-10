@@ -1,5 +1,3 @@
-Alright — here’s the complete **`README.md`** ready for GitHub, with the short intro at the top and the full English documentation after it.
-
 ---
 
 # 🎤 Audio-Seeded RSA + AES-GCM Encryptor/Decryptor
