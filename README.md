@@ -88,7 +88,7 @@ python voxcrypt_decryptor.py snapshot.txt --last
 python voxcrypt_decryptor.py snapshot.txt --all
 ```
 
-##Note:Sound input device problem may occur 
+## Note:Sound input device problem may occur 
 
 ---
 
