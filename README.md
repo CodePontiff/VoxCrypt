@@ -94,6 +94,8 @@ python voxcrypt_decryptor.py snapshot.txt --all
 
 This project is released for educational and research purposes. Do **NOT** use in production or for securing sensitive data.
 
+Note:Sound input device problem may occur 
+
 ---
 Sample:
 input text:
