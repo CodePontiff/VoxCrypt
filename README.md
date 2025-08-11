@@ -88,13 +88,14 @@ python voxcrypt_decryptor.py snapshot.txt --last
 python voxcrypt_decryptor.py snapshot.txt --all
 ```
 
+##Note:Sound input device problem may occur 
+
 ---
 
 ## 📜 License
 
 This project is released for educational and research purposes. Do **NOT** use in production or for securing sensitive data.
 
-Note:Sound input device problem may occur 
 
 ---
 Sample:
