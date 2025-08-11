@@ -32,10 +32,11 @@ import os
 SAMPLE_RATE = 44100
 SEED_CHUNK = 1024
 LIVE_CHUNK = 1024
-DISPLAY_LEN = 512
+DISPLAY_LEN = 1024
 KEY_BITS_PER_PRIME = 256
 RSA_E = 65537
 ENCRYPT_INTERVAL = 1.0
+SMOOTHING_WINDOW = 15 
 NEON_COLORS = ['#ff0080', '#bf00bf', '#8000ff', '#4000ff', '#00bfff', '#00ffff']
 
 # ========== Helpers ==========
@@ -90,14 +91,13 @@ def prepare_display_data(audio_int16, target_len=DISPLAY_LEN):
         x_new = np.linspace(0, 1, target_len)
         return x_new, np.zeros(target_len)
     display = audio_int16.astype(np.float32) / 32768.0
-    window_size = 5
-    if len(display) >= window_size:
-        kernel = np.ones(window_size) / window_size
+    if len(display) >= SMOOTHING_WINDOW:
+        kernel = np.ones(SMOOTHING_WINDOW) / SMOOTHING_WINDOW
         display = np.convolve(display, kernel, mode='same')
     x_orig = np.linspace(0, 1, len(display))
     x_new = np.linspace(0, 1, target_len)
     display = np.interp(x_new, x_orig, display)
-    display = display * 0.5
+    display *= 0.5
     return x_new, display
 
 def write_snapshot_txt(path, fields):
@@ -344,7 +344,7 @@ def main():
         return [segments_collection, glow_line, main_line, info_txt]
 
     from matplotlib.animation import FuncAnimation
-    ani = FuncAnimation(fig, update, interval=30, blit=True)
+    ani = FuncAnimation(fig, update, interval=15, blit=True)
 
     print("Showing synthwave waveform window. Close the window to finish.")
     plt.show()
