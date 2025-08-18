@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-voxcrypt_decryptor_secure.py - Enhanced Secure Decryptor with MAC Failure Handling
+voxcrypt_decryptor.py
 """
 import argparse
 import json
