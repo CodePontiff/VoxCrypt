@@ -1,7 +1,7 @@
 
 ---
 
-#🎤 VOXCRYPT
+# 🎤 VOXCRYPT
 
 Secure Hybrid Encryption Powered by Voice Biometrics
 
