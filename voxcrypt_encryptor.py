@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-VoxCrypt Encryptor - Secure Live Audio Encryption Tool
+VoxCrypt - Secure Live Audio Encryption Tool
 
 Features:
-- Voice-seeded RSA key generation
-- Real-time AES encryption with audio-derived salts
-- Cyberpunk visualization
-- Supports text/files/binary data
-- Finalize with Enter key or window close
-- Option to replace original file with encrypted version
+- Generates both .vxc encrypted output and .pem key file
+- Cyberpunk neon visualization
+- Real-time audio waveform with color gradients
+- Secure hybrid encryption (RSA + AES)
+- Supports all file types
+- Live encryption status display
+- Full file replacement option (--replace-original)
 """
 
 import argparse
@@ -32,6 +33,7 @@ from Crypto.Util.number import inverse
 import os
 import json
 from mimetypes import guess_type
+from pathlib import Path
 
 # ========== CYBERPUNK VISUAL CONFIG ==========
 CYBER_COLORS = {
@@ -103,7 +105,7 @@ def read_file_content(filepath):
 
 def record_until_enter(fs=SAMPLE_RATE, chunk=SEED_CHUNK):
     """Record microphone until ENTER is pressed"""
-    print("\n»» INITIALIZING AUDIO CAPTURE ««")
+    print("\n»» INITIALIZING AUDIO CAPTURE... PRESS ENTER AGAIN TO CONTINUE««")
     audio_chunks = []
     stream = sd.InputStream(samplerate=fs, channels=1, dtype='int16', blocksize=chunk)
     stream.start()
@@ -327,7 +329,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input", help="Input text", type=str)
     parser.add_argument("-I", "--input-file", help="Input file", type=str)
     parser.add_argument("-k", "--key", help="Key output file", type=str, default="key.pem")
-    parser.add_argument("--replace-original", help="Replace original file with encrypted version (files only)", 
+    parser.add_argument("--replace-original", help="Replace original file with .vxc version (files only)", 
                       action="store_true")
     args = parser.parse_args()
 
@@ -343,7 +345,8 @@ if __name__ == "__main__":
         print("[!] ERROR: --replace-original requires --input-file")
         sys.exit(1)
 
-    base_name = os.path.splitext(os.path.basename(args.input_file))[0] if args.input_file else "message"
+    base_name = Path(args.input_file).stem if args.input_file else "message"
+    original_path = Path(args.input_file) if args.input_file else None
 
     print("▓▓▓ PRESS ENTER TO BEGIN AUDIO CAPTURE ▓▓▓")
     input()
@@ -450,8 +453,9 @@ if __name__ == "__main__":
                 }
             }
 
-            output_path = f"{base_name}.vxc"
-            with open(output_path, "wb") as f:
+            # Create encrypted file
+            temp_output = f"{base_name}.tmp.vxc"
+            with open(temp_output, "wb") as f:
                 f.write(b'VXC3')
                 f.write(encrypted_metadata['nonce'])
                 f.write(encrypted_metadata['tag'])
@@ -461,25 +465,33 @@ if __name__ == "__main__":
                 f.write(len(public_json).to_bytes(4, 'big'))
                 f.write(public_json)
 
-            # Handle --replace-original option
-            if args.input_file and args.replace_original:
+            # Handle file replacement
+            if args.replace_original and args.input_file:
                 try:
-                    # Securely overwrite original file with encrypted content
-                    with open(args.input_file, "wb") as orig_file:
-                        with open(output_path, "rb") as encrypted_file:
-                            orig_file.write(encrypted_file.read())
-                    print(f"» REPLACED ORIGINAL: {args.input_file} with encrypted content")
+                    # Remove original file
+                    original_path.unlink()
+                    # Rename temp file to replace original
+                    final_path = original_path.with_suffix('.vxc')
+                    Path(temp_output).rename(final_path)
+                    output_path = str(final_path)
+                    print(f"» REPLACED ORIGINAL: {original_path} with {final_path}")
                 except Exception as e:
                     print(f"[!] ERROR REPLACING FILE: {e}")
                     sys.exit(1)
+            else:
+                # Standard behavior - keep both files
+                output_path = f"{base_name}.vxc"
+                os.rename(temp_output, output_path)
 
             print("\n▓▓▓ OPERATION COMPLETE ▓▓▓")
             print(f"» ENCRYPTED OUTPUT: {output_path}")
             if args.replace_original:
-                print(f"» ORIGINAL FILE SECURELY REPLACED")
+                print(f"» ORIGINAL FILE FULLY REPLACED")
             print(f"» KEY FILE: {args.key}")
             print(f"» FILE SIZE: {os.path.getsize(output_path)} bytes")
             print("▓▓▓ END TRANSMISSION ▓▓▓")
             
         except Exception as e:
             print(f"[!] OUTPUT ERROR: {e}")
+            if 'temp_output' in locals() and os.path.exists(temp_output):
+                os.remove(temp_output)
