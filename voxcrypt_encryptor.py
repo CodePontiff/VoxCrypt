@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-VOXCRYPT Encryptor - Secure Live Audio Encryption Tool
+VOXCRYPT - Secure Live Audio Encryption Tool
 
 Features:
-- Generates both .vxc encrypted output and .pem key file
-- Cyberpunk neon visualization
-- Real-time audio waveform with color gradients
-- Secure hybrid encryption (RSA + AES)
-- Supports all file types
-- Live encryption status display
+- Voice-seeded RSA key generation
+- Real-time AES encryption with audio-derived salts
+- Cyberpunk visualization
+- Supports text/files/binary data
+- Finalize with Enter key or window close
 """
 
 import argparse
@@ -22,7 +21,7 @@ import numpy as np
 import sounddevice as sd
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from matplotlib.animation import FuncAnimation  # Added missing import
+from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
 from sympy import nextprime
 from Crypto.PublicKey import RSA
@@ -72,6 +71,11 @@ encryption_done = False
 chunk_obj = None
 last_ciphertext_b64 = ""
 last_salt_hex = ""
+user_finalized = False
+window_closed = False
+base_name = "message"
+fig = None
+ax = None
 
 def get_file_type(filename):
     """Determine file type based on extension"""
@@ -151,6 +155,7 @@ def encrypt_metadata(metadata, rsa_key):
 
 def setup_cyberpunk_display():
     """Initialize cyberpunk-styled plot"""
+    global fig, ax
     plt.style.use('dark_background')
     fig, ax = plt.subplots(figsize=(12, 4), facecolor=BG_COLOR)
     ax.set_facecolor(BG_COLOR)
@@ -182,8 +187,98 @@ def colorize_waveform(y_values):
         else: colors.append(WAVE_GRADIENT[5])
     return colors
 
+def prepare_display_data(audio_int16, target_len=DISPLAY_LEN):
+    """Prepare audio data for visualization"""
+    if not audio_int16.size:
+        return np.linspace(0, 1, target_len), np.zeros(target_len)
+    
+    display = audio_int16.astype(np.float32) / 32768.0
+    if len(display) >= SMOOTHING:
+        kernel = np.ones(SMOOTHING) / SMOOTHING
+        display = np.convolve(display, kernel, mode='same')
+    x_new = np.linspace(0, 1, target_len)
+    return x_new, np.interp(x_new, np.linspace(0, 1, len(display)), display) * 0.8
+
+def frame_has_voice(frame_i16: np.ndarray) -> bool:
+    """Detect if audio frame contains voice"""
+    if frame_i16.size == 0:
+        return False
+    f = frame_i16.astype(np.float32) / 32768.0
+    return (np.sqrt(np.mean(f * f)) >= MIN_RMS) or (np.max(np.abs(f)) >= MIN_PEAK)
+
+def live_callback(indata, frames, time_info, status):
+    """Live audio callback for continuous key updates"""
+    global latest_frame, current_aes_key, current_salt, current_salt_src, user_finalized
+    
+    latest_frame = indata[:, 0].copy()
+    
+    if frame_has_voice(latest_frame):
+        current_salt = hashlib.sha256(latest_frame.tobytes()).digest()
+        current_salt_src = "mic-voice"
+    else:
+        current_salt = b""
+        current_salt_src = "rsa-static"
+    
+    if hasattr(live_callback, 'rsa_static_key'):
+        current_aes_key = hashlib.sha256(live_callback.rsa_static_key + current_salt).digest() if current_salt else live_callback.rsa_static_key
+
+def on_close(event):
+    """Handle encryption finalization and window closing"""
+    global chunk_obj, encryption_done, last_ciphertext_b64, last_salt_hex, window_closed
+    
+    if not encryption_done:
+        try:
+            if args.input:
+                data = args.input.encode('utf-8')
+            elif args.input_file:
+                data = read_file_content(args.input_file)
+            else:
+                raise ValueError("No input provided")
+
+            session_key = os.urandom(32)
+            oaep = PKCS1_OAEP.new(rsa_pub_obj, hashAlgo=SHA256)
+            rsa_ct_key = oaep.encrypt(session_key)
+            nonce = os.urandom(12)
+            cipher = AES.new(session_key, AES.MODE_GCM, nonce=nonce)
+            cipher.update(audio_fingerprint)
+            ciphertext, tag = cipher.encrypt_and_digest(data)
+            
+            last_ciphertext_b64 = base64.b64encode(ciphertext).decode('utf-8')
+            last_salt_hex = current_salt.hex() if current_salt else "static_key"
+            
+            chunk_obj = {
+                "mode": "hybrid",
+                "salt_src": current_salt_src,
+                "rsa_enc_session_key": rsa_ct_key.hex(),
+                "aes_nonce": nonce.hex(),
+                "aes_tag": tag.hex(),
+                "ciphertext": ciphertext.hex()
+            }
+            
+            print("\n▓▓▓ ENCRYPTION SUMMARY ▓▓▓")
+            print(f"» SALT: {last_salt_hex[:16]}...")
+            print(f"» CIPHERTEXT: {last_ciphertext_b64[:64]}...")
+            print(f"» KEY SOURCE: {current_salt_src}")
+            print(f"» OUTPUT FILE: {base_name}.vxc")
+            
+            encryption_done = True
+        except Exception as ex:
+            print(f"[!] ENCRYPTION FAILED: {ex}")
+    
+    window_closed = True
+    plt.close()
+
 def update_cyber_visual(_frame_idx):
     """Update the cyberpunk visualization"""
+    global user_finalized
+    
+    # Check for Enter key press
+    if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+        _ = sys.stdin.readline()
+        user_finalized = True
+        on_close(None)
+        return []
+    
     x_disp, y_disp = prepare_display_data(latest_frame, DISPLAY_LEN)
     x_vals = x_disp * (2 * np.pi)
     
@@ -211,7 +306,7 @@ def update_cyber_visual(_frame_idx):
         f"▓▓▓ ENCRYPTION PROTOCOL ACTIVE ▓▓▓",
         f"» SALT: {current_salt.hex()[:12]}..." if current_salt else "» SALT: [SYSTEM DEFAULT]",
         f"» KEY SOURCE: {current_salt_src.upper()}",
-        f"» STATUS: {'RECORDING INPUT...' if not encryption_done else 'ENCRYPTION COMPLETE'}"
+        f"» STATUS: {'RECORDING...' if not encryption_done else 'ENCRYPTION COMPLETE'}"
     ]
     
     if encryption_done:
@@ -225,40 +320,6 @@ def update_cyber_visual(_frame_idx):
     info_txt.set_text("\n".join(status))
     
     return [update_cyber_visual.segments, update_cyber_visual.glow, info_txt]
-
-def prepare_display_data(audio_int16, target_len=DISPLAY_LEN):
-    """Prepare audio data for visualization"""
-    if not audio_int16.size:
-        return np.linspace(0, 1, target_len), np.zeros(target_len)
-    
-    display = audio_int16.astype(np.float32) / 32768.0
-    if len(display) >= SMOOTHING:
-        kernel = np.ones(SMOOTHING) / SMOOTHING
-        display = np.convolve(display, kernel, mode='same')
-    x_new = np.linspace(0, 1, target_len)
-    return x_new, np.interp(x_new, np.linspace(0, 1, len(display)), display) * 0.8
-
-def frame_has_voice(frame_i16: np.ndarray) -> bool:
-    """Detect if audio frame contains voice"""
-    if frame_i16.size == 0:
-        return False
-    f = frame_i16.astype(np.float32) / 32768.0
-    return (np.sqrt(np.mean(f * f)) >= MIN_RMS) or (np.max(np.abs(f)) >= MIN_PEAK)
-
-def live_callback(indata, frames, time_info, status):
-    """Live audio callback for continuous key updates"""
-    global latest_frame, current_aes_key, current_salt, current_salt_src
-    latest_frame = indata[:, 0].copy()
-    
-    if frame_has_voice(latest_frame):
-        current_salt = hashlib.sha256(latest_frame.tobytes()).digest()
-        current_salt_src = "mic-voice"
-    else:
-        current_salt = b""
-        current_salt_src = "rsa-static"
-    
-    if hasattr(live_callback, 'rsa_static_key'):
-        current_aes_key = hashlib.sha256(live_callback.rsa_static_key + current_salt).digest() if current_salt else live_callback.rsa_static_key
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="▓ VOXCRYPT CYBERPUNK ENCRYPTOR ▓")
@@ -329,48 +390,6 @@ if __name__ == "__main__":
         fontfamily='monospace'
     )
     
-    def on_close(event):
-        global chunk_obj, encryption_done, last_ciphertext_b64, last_salt_hex
-        
-        if not encryption_done:
-            try:
-                if args.input:
-                    data = args.input.encode('utf-8')
-                elif args.input_file:
-                    data = read_file_content(args.input_file)
-                else:
-                    raise ValueError("No input provided")
-
-                session_key = os.urandom(32)
-                oaep = PKCS1_OAEP.new(rsa_pub_obj, hashAlgo=SHA256)
-                rsa_ct_key = oaep.encrypt(session_key)
-                nonce = os.urandom(12)
-                cipher = AES.new(session_key, AES.MODE_GCM, nonce=nonce)
-                cipher.update(audio_fingerprint)
-                ciphertext, tag = cipher.encrypt_and_digest(data)
-                
-                last_ciphertext_b64 = base64.b64encode(ciphertext).decode('utf-8')
-                last_salt_hex = current_salt.hex() if current_salt else "static_key"
-                
-                chunk_obj = {
-                    "mode": "hybrid",
-                    "salt_src": current_salt_src,
-                    "rsa_enc_session_key": rsa_ct_key.hex(),
-                    "aes_nonce": nonce.hex(),
-                    "aes_tag": tag.hex(),
-                    "ciphertext": ciphertext.hex()
-                }
-                
-                print("\n▓▓▓ ENCRYPTION SUMMARY ▓▓▓")
-                print(f"» SALT: {last_salt_hex[:16]}...")
-                print(f"» CIPHERTEXT: {last_ciphertext_b64[:64]}...")
-                print(f"» KEY SOURCE: {current_salt_src}")
-                print(f"» OUTPUT FILE: {base_name}.vxc")
-                
-                encryption_done = True
-            except Exception as ex:
-                print(f"[!] ENCRYPTION FAILED: {ex}")
-
     fig.canvas.mpl_connect('close_event', on_close)
 
     stream = None
@@ -392,9 +411,9 @@ if __name__ == "__main__":
             cache_frame_data=False
         )
         
-        print("\n▓▓▓ LIVE ENCRYPTION ACTIVE - CLOSE WINDOW TO FINALIZE ▓▓▓")
+        print("\n▓▓▓ LIVE ENCRYPTION ACTIVE - PRESS ENTER TO FINALIZE ▓▓▓")
         plt.show()
-
+        
     except Exception as e:
         print(f"[!] VISUALIZATION ERROR: {e}")
     finally:
@@ -442,4 +461,3 @@ if __name__ == "__main__":
             
         except Exception as e:
             print(f"[!] OUTPUT ERROR: {e}")
-            #end of the code
