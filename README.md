@@ -1,154 +1,126 @@
+# 🎤 VOXCRYPT
+**Secure Hybrid Encryption Powered by Voice Biometrics**
+
+VOXCRYPT is an experimental cryptographic system that fuses **real-time audio processing** with **hybrid encryption**.  
+It generates **RSA-2048 keys** from voice entropy and implements **AES-256-GCM** with dynamic salt values derived from live microphone input.
 
 ---
 
-# 🎤 VOXCRYPT
-
-Secure Hybrid Encryption Powered by Voice Biometrics
-
-VOXCRYPT is an advanced cryptographic system that fuses real-time audio processing. The system generates RSA-2048 keys from voice entropy and implements AES-256-GCM with dynamic salt values derived from live microphone input.
-
 ## 🔐 Core Cryptographic Process
-```
+1. **Voice-Seeded Key Generation**
+   - Records 1024-sample audio chunks to create prime numbers  
+   - Uses SHA-512 hashing of audio frames with trigonometric mixing  
+   - Implements RSA with 65537 exponent and provable primes  
 
-1.Voice-Seeded Key Generation
+2. **Continuous Key Reinforcement**
+   - Live audio input modifies AES-GCM salt values  
+   - Voice-activated mode increases entropy during speech  
+   - Silent periods fall back to static RSA-derived keys  
 
-2.Records 1024-sample audio chunks to create prime numbers
+3. **Secure Container Format**
+   - Combines encrypted payload with public metadata  
+   - Uses dual-layer encryption (RSA-OAEP + AES-GCM)  
+   - Includes audio fingerprint in AAD for tamper detection  
 
-3.Uses SHA-512 hashing of audio frames with trigonometric mixing
-
-4.Implements RSA with 65537 exponent and provable primes
-
-5.Continuous Key Reinforcement
-
-6.Live audio input modifies AES-GCM salt values
-
-7.Voice-activated mode increases entropy during speech
-
-8.Silent periods fall back to static RSA-derived keys
-
-9.Secure Container Format
-
-10.Combines encrypted payload with public metadata
-
-11.Uses dual-layer encryption (RSA-OAEP + AES-GCM)
-
-12.Includes audio fingerprint in AAD for tamper detection
-```
+---
 
 ## 🌐 Operational Features
-```
-
-1.Universal Input Support (text/files/binary)
-
-2.Cyberpunk Visualization with real-time waveform analysis
-
-3.Self-contained Packages (.vxc container + .pem key)
-
-```
-## 🔧 Options:
-```
-Encryptor:
--i or --input,     -> input text
--I or --input-file -> input file (.png,.jpg,.mp3,.pdf,.txt, etc)
--k or --key        -> key output file, example : -k key.pem
---replace-original -> Replace original file with encrypted version (files only)
-
-Decryptor:
--i or --input      -> input .vxc file (encrypted file)
--k or --key        -> key file that produced from encryptor before
--o or --output     -> Output of decryption, example : -o image.jpg
---force            -> Situational Only, attempt decryption even with errors
-
-```
-## ⚠️ Recommended Use Cases
-```
-
-1.Secure voice memo encryption
-
-2.Experimental cryptography research
-
-3.Audio-based key generation studies
-
-4.Cybersecurity education demonstrations
-```
+- ✅ Universal input support (text, files, binary)  
+- 🎛 Cyberpunk visualization with real-time waveform analysis  
+- 📦 Self-contained packages (`.vxc` container + `.pem` key)  
 
 ---
 
 ## 🌟 Features
+- 🎙 **Voice-Activated Key Generation** → Microphone input as entropy source  
+- 🔐 **Hybrid Encryption** → RSA-2048 + AES-256-GCM  
+- 🖥 **Cyberpunk Visualization** → Neon gradient waveform display  
+- 📁 **Universal File Support** → Text, images, documents, audio, binary  
+- 🎚 **Live Audio Processing** → Continuously updates encryption parameters  
+- 📦 **Self-Contained Packages** → Generates both `.vxc` encrypted files and `.pem` keys  
 
-- 🎙️ **Voice-Activated Key Generation** - Uses microphone input to seed cryptographic keys
-- 🔐 **Hybrid Encryption** - Combines RSA-2048 and AES-256-GCM for maximum security
-- 🖥 **Cyberpunk Visualization** - Real-time audio waveform with neon color gradients
-- 📁 **Universal File Support** - Encrypts text, images, documents, audio, and binary files
-- 🎚️ **Live Audio Processing** - Continuously updates encryption parameters based on ambient sound
-- 📦 **Self-Contained Packages** - Generates both `.vxc` encrypted files and `.pem` key files
-
-## 🚀 Installation:
-```
-git clone https://github.com/CodePontiff/VoxCrypt/VoxCrypt.git
-cd VoxCrypt
-```
 ---
-## 🎯 Usage
-Basic Text Encryption:
+
+## 🚀 Installation
 ```
-python voxcrypt_encyptor.py -I secret_document.pdf -k mykey.pem
+git clone https://github.com/CodePontiff/VoxCrypt.git
+cd VoxCrypt
+
+🔧 Options
+
+Encryptor
+
+-i, --input         -> Input text
+-I, --input-file    -> Input file (.png, .jpg, .mp3, .pdf, .txt, etc)
+-k, --key           -> Key output file, example: -k key.pem
+--replace-original  -> Replace original file with encrypted version (files only)
+
+Decryptor
+
+-i, --input   -> Input .vxc file (encrypted file)
+-k, --key     -> Key file produced during encryption
+-o, --output  -> Output of decryption, example: -o image.jpg
+--force       -> Force decryption attempt, even with errors
+```
+
+🎯 Usage
+
+Basic File Encryption
+
+python voxcrypt_encryptor.py -I secret_document.pdf -k mykey.pem
 python voxcrypt_decryptor.py -i secret_document.vxc -k mykey.pem -o secret_document_decrypted.pdf
+
+Basic Text Encryption
 
 python voxcrypt_encryptor.py -i "test_123" -k text_key.pem
 python voxcrypt_decryptor.py -i message.vxc -k text.pem -o text.txt
-```
----
 
-## During Operation:
-```
+🎙 During Operation
 
-1.Press ENTER to begin audio capture for key generation
+    1.Press ENTER to begin audio capture for key generation
 
-2.Speak or make noise to create entropy
+    2.Speak or make noise to create entropy
 
-3.Close the visualization window to finalize encryption
-```
+    3.Press Enter to finalize encryption
 
-## 📦 Output Files:
-```
-.vxc - Encrypted container (contains both ciphertext and public metadata)
+📦 Output Files
 
-.pem - Private key file (keep this secure!)
-```
+    .vxc → Encrypted container (ciphertext + metadata)
 
-## ⚠️ Security Notes:
-```
+    .pem → Private key file (⚠️ keep this secure!)
 
-1.The audio seed is used only during initial key generation
+⚠️ Security Notes
 
-2.Always destroy key files after use for sensitive material
+    Audio seed is used only during initial key generation
 
-3.For maximum security, use in a quiet environment
-```
+    Always destroy key files after use for sensitive material
 
-## 🛡️ Threat Model
+    For maximum security, use in a quiet environment
+
+🛡 Threat Model
 
 Protects against:
-```
 
-1.Passive eavesdropping
+    1.Passive eavesdropping
 
-2.Brute force attacks
+    2.Brute force attacks
 
-3.Known plaintext attacks
-```
+    3.Known plaintext attacks
 
 Does not protect against:
-```
 
-1.Physical key compromise
+    1.Physical key compromise
 
-2.Live memory analysis
+    2.Live memory analysis
 
-3.Side-channel attacks on microphone
-```
-## 📷˚ Screenshoot:
+    3.Side-channel microphone attacks
 
-<img width="1202" height="638" alt="image" src="https://github.com/user-attachments/assets/8e735e20-524b-4392-bd66-cea47896ae5b" />
+📷 Screenshot
+
+Sounds On:
+
+<img width="1206" height="647" alt="image" src="https://github.com/user-attachments/assets/c7d4853d-370e-449c-8a29-11be1918d09b" />
+
+Sounds Off:
+<img width="1206" height="656" alt="image" src="https://github.com/user-attachments/assets/6a6a7b63-2921-42ac-9b28-9c067e141bb4" />
 
