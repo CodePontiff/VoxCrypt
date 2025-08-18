@@ -8,6 +8,7 @@ Features:
 - Cyberpunk visualization
 - Supports text/files/binary data
 - Finalize with Enter key or window close
+- Option to replace original file with encrypted version
 """
 
 import argparse
@@ -326,6 +327,8 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input", help="Input text", type=str)
     parser.add_argument("-I", "--input-file", help="Input file", type=str)
     parser.add_argument("-k", "--key", help="Key output file", type=str, default="key.pem")
+    parser.add_argument("--replace-original", help="Replace original file with encrypted version (files only)", 
+                      action="store_true")
     args = parser.parse_args()
 
     if not args.input and not args.input_file:
@@ -334,6 +337,10 @@ if __name__ == "__main__":
 
     if args.input_file and not os.path.exists(args.input_file):
         print(f"[!] ERROR: File not found - {args.input_file}")
+        sys.exit(1)
+
+    if args.replace_original and not args.input_file:
+        print("[!] ERROR: --replace-original requires --input-file")
         sys.exit(1)
 
     base_name = os.path.splitext(os.path.basename(args.input_file))[0] if args.input_file else "message"
@@ -443,7 +450,8 @@ if __name__ == "__main__":
                 }
             }
 
-            with open(f"{base_name}.vxc", "wb") as f:
+            output_path = f"{base_name}.vxc"
+            with open(output_path, "wb") as f:
                 f.write(b'VXC3')
                 f.write(encrypted_metadata['nonce'])
                 f.write(encrypted_metadata['tag'])
@@ -453,10 +461,24 @@ if __name__ == "__main__":
                 f.write(len(public_json).to_bytes(4, 'big'))
                 f.write(public_json)
 
+            # Handle --replace-original option
+            if args.input_file and args.replace_original:
+                try:
+                    # Securely overwrite original file with encrypted content
+                    with open(args.input_file, "wb") as orig_file:
+                        with open(output_path, "rb") as encrypted_file:
+                            orig_file.write(encrypted_file.read())
+                    print(f"» REPLACED ORIGINAL: {args.input_file} with encrypted content")
+                except Exception as e:
+                    print(f"[!] ERROR REPLACING FILE: {e}")
+                    sys.exit(1)
+
             print("\n▓▓▓ OPERATION COMPLETE ▓▓▓")
-            print(f"» ENCRYPTED OUTPUT: {base_name}.vxc")
+            print(f"» ENCRYPTED OUTPUT: {output_path}")
+            if args.replace_original:
+                print(f"» ORIGINAL FILE SECURELY REPLACED")
             print(f"» KEY FILE: {args.key}")
-            print(f"» FILE SIZE: {os.path.getsize(f'{base_name}.vxc')} bytes")
+            print(f"» FILE SIZE: {os.path.getsize(output_path)} bytes")
             print("▓▓▓ END TRANSMISSION ▓▓▓")
             
         except Exception as e:
