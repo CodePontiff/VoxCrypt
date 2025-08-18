@@ -1,5 +1,7 @@
-numpy
-sounddevice
-matplotlib
-sympy
-pycryptodome
+numpy>=1.21.0
+sounddevice>=0.4.4
+matplotlib>=3.5.0
+pycryptodome>=3.14.1
+sympy>=1.9
+scipy>=1.7.3
+mimetypes>=0.1
