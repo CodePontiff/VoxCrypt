@@ -47,7 +47,7 @@ git clone https://github.com/CodePontiff/VoxCrypt.git
 cd VoxCrypt
 pip install -r requirements.txt
 
-🔧 Options
+🔧 Options:
 
 Encryptor
 
@@ -120,8 +120,12 @@ Does not protect against:
 
 Sounds On:
 
-<img width="1206" height="647" alt="image" src="https://github.com/user-attachments/assets/c7d4853d-370e-449c-8a29-11be1918d09b" />
+<img width="1191" height="615" alt="image" src="https://github.com/user-attachments/assets/027539a0-0b4e-47e9-b76b-e8ff04e4eb79" />
 
 Sounds Off:
-<img width="1206" height="656" alt="image" src="https://github.com/user-attachments/assets/6a6a7b63-2921-42ac-9b28-9c067e141bb4" />
+
+<img width="1203" height="647" alt="image" src="https://github.com/user-attachments/assets/ff691f27-4cc6-4305-b5de-a53d25d0638b" />
+
+
+
 
