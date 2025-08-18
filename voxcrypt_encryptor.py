@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VOXCRYPT - Secure Live Audio Encryption Tool
+VoxCrypt - Secure Live Audio Encryption Tool
 
 Features:
 - Voice-seeded RSA key generation
