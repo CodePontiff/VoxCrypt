@@ -44,9 +44,22 @@ VOXCRYPT is an advanced cryptographic system that fuses real-time audio processi
 
 3.Self-contained Packages (.vxc container + .pem key)
 
-4.Cross-platform Python implementation
 ```
+## 🔧 Options:
+```
+Encryptor:
+-i or --input,     -> input text
+-I or --input-file -> input file (.png,.jpg,.mp3,.pdf,.txt, etc)
+-k or --key        -> key output file, example : -k key.pem
+--replace-original -> Replace original file with encrypted version (files only)
 
+Decryptor:
+-i or --input      -> input .vxc file (encrypted file)
+-k or --key        -> key file that produced from encryptor before
+-o or --output     -> Output of decryption, example : -o image.jpg
+--force            -> Situational Only, attempt decryption even with errors
+
+```
 ## ⚠️ Recommended Use Cases
 ```
 
