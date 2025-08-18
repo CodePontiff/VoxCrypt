@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-voxcrypt_decryptor.py
+VoxCrypt Decryptor - Secure Live Audio Decryption Tool
 """
 import argparse
 import json
