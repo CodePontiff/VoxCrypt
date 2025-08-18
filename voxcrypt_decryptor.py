@@ -1,182 +1,181 @@
 #!/usr/bin/env python3
 """
-
-vox_crypt decryptor
-
+voxcrypt_decryptor_secure.py - Enhanced Secure Decryptor with MAC Failure Handling
 """
-
-import sys
-import base64
 import argparse
-from Crypto.Cipher import AES, PKCS1_OAEP
+import json
+import os
+import hashlib
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Hash import SHA256
+from Crypto.Util.Padding import unpad
 
-
-def parse_snapshots(file_path):
-   
-    snapshots = []
-    current = {}
-    mode = None  # None, 'priv', 'pub'
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = [ln.rstrip("\n") for ln in f]
-
-    for line in lines:
-        if line.startswith("=== Encryptor snapshot ==="):
-            if current:
-                snapshots.append(current)
-            current = {}
-            mode = None
-        elif line.startswith("----- RSA PRIVATE KEY (PEM) -----"):
-            current["rsa_private_pem"] = ""
-            mode = "priv"
-        elif line.startswith("----- RSA PUBLIC KEY (PEM) -----"):
-            current["rsa_public_pem"] = ""
-            mode = "pub"
-        elif ":" in line and not line.startswith("-----"):
-            # key: value lines
-            mode = None
-            k, v = line.split(":", 1)
-            current[k.strip()] = v.strip()
+def decrypt_metadata(encrypted_data, rsa_key):
+    """Decrypt metadata with additional validation"""
+    try:
+        key_material = rsa_key.export_key('DER')
+        aes_key = hashlib.sha256(key_material).digest()
+        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=encrypted_data['nonce'])
+        
+        # Split ciphertext and tag if needed
+        if isinstance(encrypted_data['ciphertext'], str):
+            ciphertext = base64.b64decode(encrypted_data['ciphertext'])
+            tag = base64.b64decode(encrypted_data['tag'])
         else:
-            # continuation lines for PEM blocks or ignored lines
-            if mode == "priv":
-                current["rsa_private_pem"] += line + "\n"
-            elif mode == "pub":
-                current["rsa_public_pem"] += line + "\n"
-            else:
-                # ignore other non-key lines
-                pass
+            ciphertext = encrypted_data['ciphertext']
+            tag = encrypted_data['tag']
+            
+        return json.loads(cipher.decrypt_and_verify(ciphertext, tag).decode('utf-8'))
+    except ValueError as e:
+        print(f"[!] Metadata integrity check failed: {e}")
+        return None
+    except Exception as e:
+        print(f"[!] Metadata decryption error: {e}")
+        return None
 
-    if current:
-        snapshots.append(current)
-    return snapshots
-
-
-def decrypt_single_snapshot(snap):
-
-    rsa_priv_pem = snap.get("rsa_private_pem", "").strip()
-    # Note: some snapshots may not include a private key; RSA.import_key will raise if invalid/empty.
-    if not rsa_priv_pem:
-        raise ValueError("No RSA private key found in snapshot.")
-
-    rsa_priv_key = RSA.import_key(rsa_priv_pem.encode())
-
-    rsa_enc_session_key_b64 = snap.get("rsa_enc_session_key_b64", "")
-    nonce_b64 = snap.get("aes_nonce_b64", "")
-    tag_b64 = snap.get("aes_tag_b64", "")
-    ciphertext_b64 = snap.get("ciphertext_base64", "")
-
-    # In the original code the decryptor expects 'aes_base_key_hex' to be audio_fingerprint.
-    aes_base_key_hex = snap.get("aes_base_key_hex", "")
-    audio_fingerprint = bytes.fromhex(aes_base_key_hex) if aes_base_key_hex else None
-
-    # Determine AES key:
-    if not rsa_enc_session_key_b64 or "fallback" in rsa_enc_session_key_b64.lower() or "failed" in rsa_enc_session_key_b64.lower():
-        # fallback to final_aes_key_hex if provided
-        final_aes_key_hex = snap.get("final_aes_key_hex", "")
-        if not final_aes_key_hex:
-            raise ValueError("No RSA-encrypted session key and no final_aes_key_hex available.")
-        key = bytes.fromhex(final_aes_key_hex)
-    else:
-        # RSA-OAEP decrypt session key
-        try:
-            enc_session_key = base64.b64decode(rsa_enc_session_key_b64)
-        except Exception as ex:
-            raise ValueError(f"Invalid base64 for rsa_enc_session_key_b64: {ex}")
-        cipher_rsa = PKCS1_OAEP.new(rsa_priv_key, hashAlgo=SHA256)
-        try:
-            key = cipher_rsa.decrypt(enc_session_key)
-        except Exception as ex:
-            raise ValueError(f"RSA-OAEP session key decryption failed: {ex}")
-
-    # ciphertext, nonce, tag must be base64 decoded (unless ciphertext was stored as raw base64 of plaintext fallback)
+def decrypt_content(encrypted_chunk, rsa_key, aad_hex=None):
+    """Decrypt content with enhanced error handling"""
     try:
-        nonce = base64.b64decode(nonce_b64) if nonce_b64 else b""
-    except Exception as ex:
-        raise ValueError(f"Invalid base64 for nonce: {ex}")
-    try:
-        tag = base64.b64decode(tag_b64) if tag_b64 else b""
-    except Exception as ex:
-        raise ValueError(f"Invalid base64 for tag: {ex}")
-    try:
-        ciphertext = base64.b64decode(ciphertext_b64) if ciphertext_b64 else b""
-    except Exception as ex:
-        raise ValueError(f"Invalid base64 for ciphertext: {ex}")
-
-    # If tag/nonce empty, treat as error (GCM expected). If ciphertext was plaintext base64 fallback, decrypt/verify will fail;
-    # but we try decrypt_and_verify and propagate errors to caller.
-    try:
-        if nonce and tag:
-            cipher_aes = AES.new(key, AES.MODE_GCM, nonce=nonce)
-            if audio_fingerprint:
-                cipher_aes.update(audio_fingerprint)
-            plaintext = cipher_aes.decrypt_and_verify(ciphertext, tag).decode()
-        else:
-            # No GCM metadata: attempt to interpret ciphertext as raw base64-encoded plaintext (fallback from encryptor)
-            # If ciphertext is actually plain text base64 then decoding already returned bytes of original plaintext.
-            plaintext = ciphertext.decode()
-    except Exception as ex:
-        raise ValueError(f"AES decryption/verification failed: {ex}")
-
-    return plaintext.strip()
-
-
-def merge_snapshots(parts):
-    if not parts:
-        return ""
-    merged = parts[0]
-    for part in parts[1:]:
-        merged += "\n" + part
-    return merged
-
+        # Convert hex strings to bytes if needed
+        def to_bytes(data):
+            if isinstance(data, str):
+                return bytes.fromhex(data)
+            return data
+            
+        # RSA decrypt session key
+        cipher_rsa = PKCS1_OAEP.new(rsa_key, hashAlgo=SHA256)
+        enc_session_key = to_bytes(encrypted_chunk['rsa_enc_session_key'])
+        session_key = cipher_rsa.decrypt(enc_session_key)
+        
+        # AES decrypt content
+        cipher_aes = AES.new(
+            session_key,
+            AES.MODE_GCM,
+            nonce=to_bytes(encrypted_chunk['aes_nonce'])
+        )
+        
+        # Add Additional Authenticated Data if present
+        if aad_hex:
+            cipher_aes.update(to_bytes(aad_hex))
+            
+        ciphertext = to_bytes(encrypted_chunk['ciphertext'])
+        tag = to_bytes(encrypted_chunk['aes_tag'])
+        
+        # Verify and decrypt
+        decrypted = cipher_aes.decrypt_and_verify(ciphertext, tag)
+        
+        # Handle padding if needed (for CBC mode fallback)
+        if encrypted_chunk.get('mode') == 'cbc':
+            decrypted = unpad(decrypted, AES.block_size)
+            
+        return decrypted
+        
+    except ValueError as e:
+        print("\n[!] Critical: MAC Verification Failed")
+        print("Possible causes:")
+        print("- Incorrect private key")
+        print("- Corrupted ciphertext")
+        print("- Tampered data")
+        print("- Incorrect AAD (Additional Authenticated Data)")
+        print(f"\nTechnical details: {e}")
+        return None
+        
+    except Exception as e:
+        print(f"[!] Decryption error: {e}")
+        return None
 
 def main():
-    parser = argparse.ArgumentParser(description="Decrypt snapshot TXT from encryptor.")
-    parser.add_argument("input_file", help="Path ke file snapshot TXT")
-    parser.add_argument("--first", action="store_true", help="Ambil snapshot pertama saja")
-    parser.add_argument("--last", action="store_true", help="Ambil snapshot terakhir saja")
-    parser.add_argument("--all", action="store_true", help="Gabungkan semua snapshot (hapus exact-duplicates)")
+    parser = argparse.ArgumentParser(description="Enhanced Secure VoxCrypt Decryptor")
+    parser.add_argument("-i", "--input", help="Input .vxc file", required=True)
+    parser.add_argument("-k", "--key", help="RSA private key file", required=True)
+    parser.add_argument("-o", "--output", help="Output file path")
+    parser.add_argument("--force", help="Attempt decryption even with errors", action="store_true")
     args = parser.parse_args()
 
-    snapshots = parse_snapshots(args.input_file)
-    if not snapshots:
-        print("No snapshots found in file.")
-        sys.exit(1)
+    # Key loading with validation
+    try:
+        with open(args.key, 'rb') as f:
+            key_content = f.read()
+            if b"BEGIN PRIVATE KEY" not in key_content:
+                print("[!] Warning: Key file doesn't look like a PEM private key")
+            rsa_key = RSA.import_key(key_content)
+    except Exception as e:
+        print(f"[!] Key loading failed: {e}")
+        return
 
-    result = ""
+    # File reading with structure validation
+    try:
+        with open(args.input, 'rb') as f:
+            magic = f.read(4)
+            if magic != b'VXC3':
+                print(f"[!] Invalid file format (got {magic}, expected VXC3)")
+                if not args.force:
+                    return
+                
+            nonce = f.read(12)
+            tag = f.read(16)
+            remaining = f.read()
+            
+            parts = remaining.split(b'\x00\x00\x00\x00')
+            if len(parts) < 2:
+                print("[!] File structure invalid")
+                if not args.force:
+                    return
+                
+            public_len = int.from_bytes(parts[1][:4], 'big')
+            public_metadata = json.loads(parts[1][4:4+public_len].decode('utf-8'))
+            
+            encrypted_metadata = {
+                'nonce': nonce,
+                'tag': tag,
+                'ciphertext': parts[0]
+            }
+    except Exception as e:
+        print(f"[!] File reading failed: {e}")
+        return
 
-    if args.all:
-        parts = []
-        seen = set()
-        for idx, snap in enumerate(snapshots, 1):
-            try:
-                pt = decrypt_single_snapshot(snap)
-                # deduplicate exact plaintexts while preserving order
-                if pt not in seen:
-                    seen.add(pt)
-                    parts.append(pt)
-            except Exception as ex:
-                print(f"[!] Snapshot #{idx} decryption failed:", ex)
-        # join unique parts preserving order; no aggressive overlap removal
-        result = "\n\n".join(parts)
-    elif args.last:
-        try:
-            result = decrypt_single_snapshot(snapshots[-1])
-        except Exception as ex:
-            print(f"[!] Last snapshot decryption failed:", ex)
-            sys.exit(1)
-    else:  # default atau --first
-        try:
-            result = decrypt_single_snapshot(snapshots[0])
-        except Exception as ex:
-            print(f"[!] First snapshot decryption failed:", ex)
-            sys.exit(1)
+    # Metadata decryption
+    metadata = decrypt_metadata(encrypted_metadata, rsa_key)
+    if not metadata:
+        print("[!] Metadata decryption failed - cannot proceed")
+        return
 
-    print("=== Decryption Result ===")
-    print(result)
+    # Content decryption
+    if not metadata.get('cipher_chunks'):
+        print("[!] No encrypted chunks found")
+        return
+        
+    decrypted = decrypt_content(
+        metadata['cipher_chunks'][0],
+        rsa_key,
+        metadata.get('aad_base_hex')
+    )
+    
+    if not decrypted:
+        print("[!] Content decryption failed")
+        return
 
+    # Output handling
+    output_path = args.output
+    if not output_path:
+        original_name = public_metadata['file_metadata']['original_name']
+        output_path = f"decrypted_{original_name}"
+
+    try:
+        file_type = public_metadata['file_metadata']['file_type']
+        mode = 'wb' if file_type != 'text' else 'w'
+        content = decrypted if file_type != 'text' else decrypted.decode('utf-8')
+        
+        with open(output_path, mode) as f:
+            f.write(content)
+            
+        print(f"[+] Successfully decrypted to {output_path}")
+        print(f"    File type: {file_type}")
+        print(f"    Original name: {public_metadata['file_metadata']['original_name']}")
+        
+    except Exception as e:
+        print(f"[!] Output write failed: {e}")
 
 if __name__ == "__main__":
     main()
