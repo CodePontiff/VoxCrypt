@@ -66,7 +66,7 @@ VOXCRYPT is an advanced cryptographic system that fuses real-time audio processi
 - 🎙️ **Voice-Activated Key Generation** - Uses microphone input to seed cryptographic keys
 - 🔐 **Hybrid Encryption** - Combines RSA-2048 and AES-256-GCM for maximum security
 - 🖥 **Cyberpunk Visualization** - Real-time audio waveform with neon color gradients
-- 📁 **Universal File Support** - Encrypts text, images, documents, and binary files
+- 📁 **Universal File Support** - Encrypts text, images, documents, audio, and binary files
 - 🎚️ **Live Audio Processing** - Continuously updates encryption parameters based on ambient sound
 - 📦 **Self-Contained Packages** - Generates both `.vxc` encrypted files and `.pem` key files
 
