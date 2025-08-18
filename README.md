@@ -5,7 +5,7 @@
 
 Secure Hybrid Encryption Powered by Voice Biometrics
 
-VOXCRYPT is an advanced cryptographic system that fuses real-time audio processing with military-grade encryption. The system generates RSA-2048 keys from voice entropy and implements AES-256-GCM with dynamic salt values derived from live microphone input.
+VOXCRYPT is an advanced cryptographic system that fuses real-time audio processing. The system generates RSA-2048 keys from voice entropy and implements AES-256-GCM with dynamic salt values derived from live microphone input.
 
 ## 🔐 Core Cryptographic Process
 ```
