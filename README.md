@@ -45,6 +45,7 @@ It generates **RSA-2048 keys** from voice entropy and implements **AES-256-GCM**
 ```
 git clone https://github.com/CodePontiff/VoxCrypt.git
 cd VoxCrypt
+pip install -r requirements.txt
 
 🔧 Options
 
