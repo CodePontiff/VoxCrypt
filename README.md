@@ -36,24 +36,28 @@ VOXCRYPT is an advanced cryptographic system that fuses real-time audio processi
 ```
 
 ## 🌐 Operational Features
+```
 
-    Universal Input Support (text/files/binary)
+1.Universal Input Support (text/files/binary)
 
-    Cyberpunk Visualization with real-time waveform analysis
+2.Cyberpunk Visualization with real-time waveform analysis
 
-    Self-contained Packages (.vxc container + .pem key)
+3.Self-contained Packages (.vxc container + .pem key)
 
-    Cross-platform Python implementation
+4.Cross-platform Python implementation
+```
 
 ## ⚠️ Recommended Use Cases
+```
 
-    Secure voice memo encryption
+1.Secure voice memo encryption
 
-    Experimental cryptography research
+2.Experimental cryptography research
 
-    Audio-based key generation studies
+3.Audio-based key generation studies
 
-    Cybersecurity education demonstrations
+4.Cybersecurity education demonstrations
+```
 
 ---
 
@@ -131,3 +135,7 @@ Does not protect against:
 
 3.Side-channel attacks on microphone
 ```
+## 📷˚ Screenshoot:
+
+<img width="1202" height="638" alt="image" src="https://github.com/user-attachments/assets/8e735e20-524b-4392-bd66-cea47896ae5b" />
+
