@@ -1,142 +1,133 @@
 
 ---
 
-# 🎤 VoxCrypt Audio-Seeded RSA + AES-GCM Encryptor/Decryptor
+#🎤 VOXCRYPT
 
-**VoxCrypt Audio-Seeded RSA + AES-GCM** is an experimental encryption tool that combines cryptography with real-time audio processing.
-The RSA keypair is generated entirely from your voice, recorded through the microphone, while AES-256-GCM encryption uses continuously updated salt values derived from live audio input.
+Secure Hybrid Encryption Powered by Voice Biometrics
 
-The program also features a **neon-style waveform display** of your voice in real time, and can save encryption “snapshots” containing the keys and ciphertext for later decryption.
-It’s designed for demonstration, research, and educational purposes in the fields of audio signal processing and cryptography.
+VOXCRYPT is an advanced cryptographic system that fuses real-time audio processing with military-grade encryption. The system generates RSA-2048 keys from voice entropy and implements AES-256-GCM with dynamic salt values derived from live microphone input.
+
+## 🔐 Core Cryptographic Process
+```
+
+1.Voice-Seeded Key Generation
+
+2.Records 1024-sample audio chunks to create prime numbers
+
+3.Uses SHA-512 hashing of audio frames with trigonometric mixing
+
+4.Implements RSA with 65537 exponent and provable primes
+
+5.Continuous Key Reinforcement
+
+6.Live audio input modifies AES-GCM salt values
+
+7.Voice-activated mode increases entropy during speech
+
+8.Silent periods fall back to static RSA-derived keys
+
+9.Secure Container Format
+
+10.Combines encrypted payload with public metadata
+
+11.Uses dual-layer encryption (RSA-OAEP + AES-GCM)
+
+12.Includes audio fingerprint in AAD for tamper detection
+```
+
+## 🌐 Operational Features
+
+    Universal Input Support (text/files/binary)
+
+    Cyberpunk Visualization with real-time waveform analysis
+
+    Self-contained Packages (.vxc container + .pem key)
+
+    Cross-platform Python implementation
+
+## ⚠️ Recommended Use Cases
+
+    Secure voice memo encryption
+
+    Experimental cryptography research
+
+    Audio-based key generation studies
+
+    Cybersecurity education demonstrations
 
 ---
 
-## ⚙️ Features & Options
+## 🌟 Features
 
-### **Encryptor (`encryptor_oaep_gcm_append.py`)**
+- 🎙️ **Voice-Activated Key Generation** - Uses microphone input to seed cryptographic keys
+- 🔐 **Hybrid Encryption** - Combines RSA-2048 and AES-256-GCM for maximum security
+- 🖥 **Cyberpunk Visualization** - Real-time audio waveform with neon color gradients
+- 📁 **Universal File Support** - Encrypts text, images, documents, and binary files
+- 🎚️ **Live Audio Processing** - Continuously updates encryption parameters based on ambient sound
+- 📦 **Self-Contained Packages** - Generates both `.vxc` encrypted files and `.pem` key files
 
-| Option                    | Description                                                             |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `-i "text"`               | Encrypts the given text directly                                        |
-| `-I file.txt`             | Encrypts a text file (automatically split into 2048-character chunks)   |
-| `-o output.txt`           | Saves encryption snapshot (RSA key, AES key, nonce, ciphertext) to file |
-| `--save-private file.pem` | Saves the generated RSA private key to a file                           |
-🔹 *Note*: The RSA key is generated from the initial recorded seed audio. The AES salt is updated continuously from live microphone input during encryption.
+## 🚀 Installation:
+```
+git clone https://github.com/CodePontiff/VoxCrypt/VoxCrypt.git
+cd VoxCrypt
+```
+---
+## 🎯 Usage
+Basic Text Encryption:
+```
+python voxcrypt_encyptor.py -I secret_document.pdf -k mykey.pem
+python voxcrypt_decryptor.py -i secret_document.vxc -k mykey.pem -o secret_document_decrypted.pdf
 
+python voxcrypt_encryptor.py -i "test_123" -k text_key.pem
+python voxcrypt_decryptor.py -i message.vxc -k text.pem -o text.txt
+```
 ---
 
-### **Decryptor (`decryptor.py`)**
-
-| Option       | Description                                                           |
-| ------------ | --------------------------------------------------------------------- |
-| `input_file` | output file to decrypt                                                |
-| `--first`    | Decrypts only the first output                                        |
-| `--last`     | Decrypts only the last line of output file                            |
-| `--all`      | Merges all snapshots into one output, removing duplicate text         |
-
----
-
-## 📦 Required Libraries
-
-You can create a `requirements.txt` file:
-
-```txt
-numpy
-sounddevice
-matplotlib
-sympy
-pycryptodome
+## During Operation:
 ```
 
-Install them all at once:
+1.Press ENTER to begin audio capture for key generation
 
-```bash
-pip install -r requirements.txt
+2.Speak or make noise to create entropy
+
+3.Close the visualization window to finalize encryption
 ```
 
-Or install individually:
+## 📦 Output Files:
+```
+.vxc - Encrypted container (contains both ciphertext and public metadata)
 
-```bash
-pip install numpy sounddevice matplotlib sympy pycryptodome
+.pem - Private key file (keep this secure!)
 ```
 
----
-
-## ▶️ Usage Examples
-
-### **Encrypt from direct text**
-
-```bash
-python voxcrypt_encryptor.py -i "Secret message" -o key.txt
+## ⚠️ Security Notes:
 ```
 
-### **Encrypt from a text file**
+1.The audio seed is used only during initial key generation
 
-```bash
-python voxcrypt_encryptor.py -I message.txt -o key.txt
+2.Always destroy key files after use for sensitive material
+
+3.For maximum security, use in a quiet environment
 ```
 
-### **Decrypt the last snapshot**
+## 🛡️ Threat Model
 
-```bash
-python voxcrypt_decryptor.py snapshot.txt --last
+Protects against:
 ```
 
-### **Decrypt and merge all snapshots**
+1.Passive eavesdropping
 
-```bash
-python voxcrypt_decryptor.py snapshot.txt --all
+2.Brute force attacks
+
+3.Known plaintext attacks
 ```
 
-## Note:Sound input device problem may occur 
-
----
-
-## 📜 License
-
-This project is released for educational and research purposes. Do **NOT** use in production or for securing sensitive data.
-
-
----
-Sample:
-input text:
-```
-python voxcrypt_encryptor.py -i "test vox_crypt" -o output_short.txt
-
-```
-<img width="601" height="29" alt="image" src="https://github.com/user-attachments/assets/d85910bb-06d6-42a8-ace1-211a469d9375" />
-
-process text:
-<img width="976" height="705" alt="image" src="https://github.com/user-attachments/assets/b20ee8ef-5740-4b7e-a1b7-9540b4b3ba7b" />
-
-output text:
-```
-python voxcrypt_decryptor.py output_short.txt --all 
+Does not protect against:
 ```
 
-<img width="471" height="65" alt="image" src="https://github.com/user-attachments/assets/6c6f6169-1060-4b19-bc8e-5ee79caee8df" />
+1.Physical key compromise
 
----
+2.Live memory analysis
 
-input file:
+3.Side-channel attacks on microphone
 ```
-python voxcrypt_encryptor.py -I loremipsum.txt -o output_long.txt 
-
-```
-<img width="598" height="25" alt="image" src="https://github.com/user-attachments/assets/dbfdf358-28e7-4af8-a9f4-360308e53e5d" />
-
-
-
-process file:
-<img width="1079" height="712" alt="image" src="https://github.com/user-attachments/assets/a1a15ab8-fb01-489e-b2bb-6f163ce1edbd" />
-
-
-output file:
-```
-python voxcrypt_decryptor.py output_long.txt --all    
-```
-
-<img width="786" height="196" alt="image" src="https://github.com/user-attachments/assets/b4ddce9d-f247-4b12-9aae-3bfb6a6f3c98" />
-
-
----
