@@ -97,8 +97,6 @@ def main():
     try:
         with open(args.key, 'rb') as f:
             key_content = f.read()
-            if b"BEGIN PRIVATE KEY" not in key_content:
-                print("[!] Warning: Key file doesn't look like a PEM private key")
             rsa_key = RSA.import_key(key_content)
     except Exception as e:
         print(f"[!] Key loading failed: {e}")
