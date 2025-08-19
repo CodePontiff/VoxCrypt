@@ -55,6 +55,7 @@ Encryptor
 -I, --input-file    -> Input file (.png, .jpg, .mp3, .pdf, .txt, etc)
 -k, --key           -> Key output file, example: -k key.pem
 --replace-original  -> Warning this option will replace original file with encrypted version (.vxc) immedietly
+-v or --verbose      -> Show detailed output in CLI at the end of encryption process
 
 Decryptor
 
