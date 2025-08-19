@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VoxCrypt - Secure Live Audio Encryption Tool
+VoxCrypt - Secure Live Audio Encryption Tool with Verbose Output
 
 Features:
 - Generates both .vxc encrypted output and .pem key file
@@ -10,6 +10,8 @@ Features:
 - Supports all file types
 - Live encryption status display
 - Full file replacement option (--replace-original)
+- Verbose mode showing cryptographic details (-v/--verbose)
+- Animated "RECORDING..." status dots
 """
 
 import argparse
@@ -79,6 +81,8 @@ window_closed = False
 base_name = "message"
 fig = None
 ax = None
+args = None  # Will be set in main()
+dot_animation_state = 0  # For animated recording dots
 
 def get_file_type(filename):
     """Determine file type based on extension"""
@@ -123,7 +127,7 @@ def record_until_enter(fs=SAMPLE_RATE, chunk=SEED_CHUNK):
 def make_seed_from_samples(samples, key_bits=KEY_BITS):
     """Generate cryptographic seed from audio"""
     mean = float(np.mean(samples)) if samples.size > 0 else 0.0
-    rms = float(np.sqrt(np.mean(samples.astype(np.float64)**2))) if samples.size > 0 else 0.0
+    rms = float(np.sqrt(np.mean(samples.astype(np.float64)**2)) if samples.size > 0 else 0.0)
     trig_val = abs(math.sin(mean) * math.cos(rms))
     h = hashlib.sha512(samples.tobytes()).digest()
     h_int = int.from_bytes(h, 'big')
@@ -272,8 +276,11 @@ def on_close(event):
     plt.close()
 
 def update_cyber_visual(_frame_idx):
-    """Update the cyberpunk visualization"""
-    global user_finalized
+    """Update the cyberpunk visualization with verbose details"""
+    global user_finalized, dot_animation_state
+    
+    # Increment animation state (cycles 0-3)
+    dot_animation_state = (dot_animation_state + 1) % 4
     
     # Check for Enter key press
     if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
@@ -305,11 +312,18 @@ def update_cyber_visual(_frame_idx):
     update_cyber_visual.glow.set_data(x_vals, y_disp)
     ax.add_collection(update_cyber_visual.segments)
     
+    # Create animated recording status
+    recording_status = "RECORDING" + "." * dot_animation_state
+    if encryption_done:
+        status_text = "ENCRYPTION COMPLETE"
+    else:
+        status_text = recording_status
+    
     status = [
         f"▓▓▓ ENCRYPTION PROTOCOL ACTIVE ▓▓▓",
         f"» SALT: {current_salt.hex()[:12]}..." if current_salt else "» SALT: [SYSTEM DEFAULT]",
         f"» KEY SOURCE: {current_salt_src.upper()}",
-        f"» STATUS: {'RECORDING...' if not encryption_done else 'ENCRYPTION COMPLETE'}"
+        f"» STATUS: {status_text}"
     ]
     
     if encryption_done:
@@ -319,6 +333,14 @@ def update_cyber_visual(_frame_idx):
             f"» CIPHERTEXT: {last_ciphertext_b64[:24]}...",
             f"» OUTPUT: {base_name}.vxc"
         ])
+        
+        if args.verbose:
+            status.extend([
+                "",
+                "▓▓▓ LIVE CRYPTO DETAILS ▓▓▓",
+                f"» CURRENT SALT: {current_salt.hex()[:16]}..." if current_salt else "» NO ACTIVE SALT",
+                f"» AES KEY: {current_aes_key.hex()[:16]}..." if current_aes_key else "» KEY NOT READY"
+            ])
     
     info_txt.set_text("\n".join(status))
     
@@ -330,6 +352,8 @@ if __name__ == "__main__":
     parser.add_argument("-I", "--input-file", help="Input file", type=str)
     parser.add_argument("-k", "--key", help="Key output file", type=str, default="key.pem")
     parser.add_argument("--replace-original", help="Replace original file with .vxc version (files only)", 
+                      action="store_true")
+    parser.add_argument("-v", "--verbose", help="Show detailed cryptographic information", 
                       action="store_true")
     args = parser.parse_args()
 
@@ -489,6 +513,17 @@ if __name__ == "__main__":
                 print(f"» ORIGINAL FILE FULLY REPLACED")
             print(f"» KEY FILE: {args.key}")
             print(f"» FILE SIZE: {os.path.getsize(output_path)} bytes")
+
+            if args.verbose:
+                print("\n▓▓▓ VERBOSE CRYPTOGRAPHIC DETAILS ▓▓▓")
+                print(f"» AUDIO SEED: {audio_fingerprint.hex()}")
+                print(f"» RSA PUBLIC KEY (n): {n}")
+                print(f"» RSA PRIVATE KEY (d): {d}")
+                print(f"» AES SESSION KEY: {session_key.hex()}")
+                print(f"» LAST SALT USED: {current_salt.hex() if current_salt else 'None'}")
+                print(f"» FULL CIPHERTEXT: {last_ciphertext_b64}")
+                print(f"» ENCRYPTION MODE: {current_salt_src.upper()}")
+
             print("▓▓▓ END TRANSMISSION ▓▓▓")
             
         except Exception as e:
